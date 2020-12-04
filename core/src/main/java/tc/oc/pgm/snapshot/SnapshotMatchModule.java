@@ -1,7 +1,5 @@
 package tc.oc.pgm.snapshot;
 
-import com.google.common.collect.ImmutableList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import org.bukkit.Chunk;
@@ -22,7 +20,6 @@ import tc.oc.pgm.api.match.MatchScope;
 import tc.oc.pgm.api.match.factory.MatchModuleFactory;
 import tc.oc.pgm.api.module.exception.ModuleLoadException;
 import tc.oc.pgm.events.ListenerScope;
-import tc.oc.pgm.renewable.RenewableMatchModule;
 import tc.oc.pgm.util.chunk.ChunkVector;
 
 /**
@@ -37,11 +34,6 @@ import tc.oc.pgm.util.chunk.ChunkVector;
 public class SnapshotMatchModule implements MatchModule, Listener {
 
   public static class Factory implements MatchModuleFactory<SnapshotMatchModule> {
-    @Override
-    public Collection<Class<? extends MatchModule>> getSoftDependencies() {
-      return ImmutableList.of(
-          RenewableMatchModule.class); // Only needs to load if Renewables are loaded
-    }
 
     @Override
     public SnapshotMatchModule createMatchModule(Match match) throws ModuleLoadException {
