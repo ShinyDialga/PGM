@@ -604,4 +604,31 @@ public interface NMSHacks {
       entity.f(tag);
     }
   }
+
+  class FakeWitherSkull extends FakeEntityImpl<EntityWitherSkull> {
+
+    public FakeWitherSkull(World world, boolean invisible) {
+      super(new EntityWitherSkull(((CraftWorld) world).getHandle()));
+
+      entity.setInvisible(invisible);
+    }
+
+    @Override
+    public void spawn(Player viewer, Location location, Vector velocity) {
+      entity.setPositionRotation(
+          location.getX(),
+          location.getY(),
+          location.getZ(),
+          location.getYaw(),
+          location.getPitch());
+      entity.motX = velocity.getX();
+      entity.motY = velocity.getY();
+      entity.motZ = velocity.getZ();
+      sendPacket(viewer, spawnPacket());
+    }
+
+    protected Packet<?> spawnPacket() {
+      return new PacketPlayOutSpawnEntity(entity, 66);
+    }
+  }
 }

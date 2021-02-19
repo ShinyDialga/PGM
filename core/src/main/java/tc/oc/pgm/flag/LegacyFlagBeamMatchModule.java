@@ -188,16 +188,18 @@ public class LegacyFlagBeamMatchModule implements MatchModule, Listener {
 
     final Flag flag;
     final Player bukkit;
+    final NMSHacks.FakeWitherSkull base;
     final List<NMSHacks.FakeZombie> segments;
 
     Beam(Flag flag, Player bukkit) {
       this.flag = flag;
       this.bukkit = bukkit;
+      this.base = new NMSHacks.FakeWitherSkull(match.getWorld(), true);
       this.segments =
           range(0, 64) // ~100 blocks is the height which the particles appear to be reasonably
               // visible (similar amount to amount closest to the flag), we limit this to 64 blocks
               // to reduce load on the client
-              .mapToObj(i -> new NMSHacks.FakeZombie(match.getWorld(), true, false))
+              .mapToObj(i -> new NMSHacks.FakeZombie(match.getWorld(), true, true))
               .collect(Collectors.toList());
       show();
     }
@@ -234,6 +236,8 @@ public class LegacyFlagBeamMatchModule implements MatchModule, Listener {
             location().ifPresent(l -> segment.spawn(bukkit, l.clone()));
             segment.wear(bukkit, 4, wool()); // Head slot
           });
+      location().ifPresent(l -> base.spawn(bukkit, l.clone()));
+      base.ride(bukkit, segments.get(0).entity());
       range(1, segments.size())
           .forEachOrdered(
               i -> {
@@ -244,16 +248,18 @@ public class LegacyFlagBeamMatchModule implements MatchModule, Listener {
 
     void update() {
       Optional<Player> carrier = carrier();
-      NMSHacks.FakeZombie base = segments.get(0);
+      //      NMSHacks.FakeZombie base = segments.get(0);
       if (carrier.isPresent()) {
-        base.mount(bukkit, carrier.get());
+        base.teleport(bukkit, carrier.get().getLocation().clone().add(0, 2, 0));
+        //        base.mount(bukkit, carrier.get());
       } else {
-        base.entity().eject();
+        //        base.entity().eject();
         location().ifPresent(l -> base.teleport(bukkit, l));
       }
     }
 
     void hide() {
+      base.destroy(bukkit);
       for (int i = segments.size() - 1; i >= 0; i--) {
         segments.get(i).destroy(bukkit);
       }
