@@ -42,7 +42,7 @@ public class ObserverToolsMatchModule implements MatchModule, Listener {
   public static final int TOOL_BUTTON_SLOT = 8;
 
   // Material of tool item item
-  public static final Material TOOL_MATERIAL = Material.DIAMOND;
+  public static final Material TOOL_MATERIAL = Material.BOOK;
 
   private final Match match;
   private final InventoryMenu menu;

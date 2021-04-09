@@ -15,6 +15,10 @@ import tc.oc.pgm.api.player.MatchPlayer;
  * @see SettingValue
  */
 public enum SettingKey {
+  AUTOJOIN(
+      Arrays.asList("autojoin", "auto"),
+      AUTOJOIN_ON,
+      AUTOJOIN_OFF), // Changes if a match join automatically happens
   CHAT("chat", CHAT_TEAM, CHAT_GLOBAL, CHAT_ADMIN), // Changes the default chat channel
   DEATH(
       Arrays.asList("death", "dms"), DEATH_ALL, DEATH_OWN), // Changes which death messages are seen
