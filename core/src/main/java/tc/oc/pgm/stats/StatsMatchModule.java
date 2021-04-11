@@ -58,7 +58,6 @@ import tc.oc.pgm.util.menu.InventoryMenuItem;
 import tc.oc.pgm.util.menu.pattern.DoubleRowMenuArranger;
 import tc.oc.pgm.util.menu.pattern.SingleRowMenuArranger;
 import tc.oc.pgm.util.named.NameStyle;
-import tc.oc.pgm.util.text.TextFormatter;
 
 @ListenerScope(MatchScope.LOADED)
 public class StatsMatchModule implements MatchModule, Listener {
@@ -244,16 +243,17 @@ public class StatsMatchModule implements MatchModule, Listener {
                 if (viewer.getSettings().getValue(SettingKey.STATS) == SettingValue.STATS_OFF)
                   continue;
 
-                viewer.sendMessage(
-                    TextFormatter.horizontalLineHeading(
-                        viewer.getBukkit(),
-                        translatable("match.stats.title", NamedTextColor.YELLOW),
-                        NamedTextColor.WHITE));
-                viewer.sendMessage(killMessage);
-                viewer.sendMessage(killstreakMessage);
-                viewer.sendMessage(deathMessage);
-                if (bestBowshot.getValue() != 0) viewer.sendMessage(bowshotMessage);
-                if (verboseStats) viewer.sendMessage(damageMessage);
+                //                viewer.sendMessage(
+                //                    TextFormatter.horizontalLineHeading(
+                //                        viewer.getBukkit(),
+                //                        translatable("match.stats.title", NamedTextColor.YELLOW),
+                //                        NamedTextColor.WHITE));
+                //                viewer.sendMessage(killMessage);
+                //                viewer.sendMessage(killstreakMessage);
+                //                viewer.sendMessage(deathMessage);
+                //                if (bestBowshot.getValue() != 0)
+                // viewer.sendMessage(bowshotMessage);
+                //                if (verboseStats) viewer.sendMessage(damageMessage);
                 giveVerboseStatsItem(viewer, false);
               }
             },
