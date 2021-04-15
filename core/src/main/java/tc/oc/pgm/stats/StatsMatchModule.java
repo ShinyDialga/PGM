@@ -93,7 +93,7 @@ public class StatsMatchModule implements MatchModule, Listener {
     double realFinalDamage =
         event.getFinalDamage() - event.getDamage(EntityDamageEvent.DamageModifier.ABSORPTION);
     if (damager != null) getPlayerStat(damager).onDamage(realFinalDamage, bow);
-    if (damaged != null) getPlayerStat(damaged).onDamaged(realFinalDamage);
+    if (damaged != null) getPlayerStat(damaged).onDamaged(realFinalDamage, bow);
   }
 
   @EventHandler

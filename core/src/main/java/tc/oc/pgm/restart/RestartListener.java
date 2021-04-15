@@ -62,7 +62,7 @@ public class RestartListener implements Listener {
           Duration countdownTime =
               RestartManager.getCountdown() != null
                   ? RestartManager.getCountdown()
-                  : Duration.ofSeconds(30);
+                  : plugin.getConfiguration().getRestartTime();
           this.logger.info("Starting restart countdown from " + countdownTime);
           ctx.start(new RestartCountdown(match), countdownTime);
         }

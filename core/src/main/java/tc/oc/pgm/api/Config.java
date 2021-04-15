@@ -96,6 +96,13 @@ public interface Config {
   long getMatchLimit();
 
   /**
+   * Gets the amount of time a server takes to restart
+   *
+   * @return A duration of the restart time
+   */
+  Duration getRestartTime();
+
+  /**
    * Gets the minimum number of players for a match to start.
    *
    * @return A minimum number of players, disabled if non-positive.

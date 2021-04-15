@@ -65,6 +65,7 @@ public final class PGMConfig implements Config {
   // restart.*
   private final Duration uptimeLimit;
   private final long matchLimit;
+  private final Duration restartTime;
 
   // gameplay.*
   private final boolean woolRefill;
@@ -159,6 +160,7 @@ public final class PGMConfig implements Config {
 
     this.uptimeLimit = parseDuration(config.getString("restart.uptime", "1d"));
     this.matchLimit = parseInteger(config.getString("restart.match-limit", "30"));
+    this.restartTime = parseDuration(config.getString("restart.time", "15"));
 
     this.woolRefill = parseBoolean(config.getString("gameplay.refill-wool", "true"));
     this.verboseStats = parseBoolean(config.getString("ui.verbose-stats", "false"));
@@ -476,6 +478,11 @@ public final class PGMConfig implements Config {
   @Override
   public long getMatchLimit() {
     return matchLimit;
+  }
+
+  @Override
+  public Duration getRestartTime() {
+    return restartTime;
   }
 
   @Override
