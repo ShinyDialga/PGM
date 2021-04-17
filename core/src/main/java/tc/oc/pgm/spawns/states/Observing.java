@@ -84,7 +84,7 @@ public class Observing extends State {
         player.getInventory().setItem(1, toolFactory.getEditWand(bukkit));
       }
 
-      player.getInventory().setItem(3, toolFactory.getTeleportTool(bukkit));
+      //      player.getInventory().setItem(3, toolFactory.getTeleportTool(bukkit));
 
       // Let other modules give observer items
       player.getMatch().callEvent(new ObserverKitApplyEvent(player));
