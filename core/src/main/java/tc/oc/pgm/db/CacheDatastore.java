@@ -8,6 +8,7 @@ import tc.oc.pgm.api.Datastore;
 import tc.oc.pgm.api.map.MapActivity;
 import tc.oc.pgm.api.player.Username;
 import tc.oc.pgm.api.setting.Settings;
+import tc.oc.pgm.util.skin.Skin;
 
 @SuppressWarnings({"UnstableApiUsage"})
 public class CacheDatastore implements Datastore {
@@ -15,6 +16,7 @@ public class CacheDatastore implements Datastore {
   private final Datastore datastore;
   private final LoadingCache<UUID, Username> usernames;
   private final LoadingCache<UUID, Settings> settings;
+  private final LoadingCache<UUID, Skin> skins; // Skins are only stored in cache
   private final LoadingCache<String, MapActivity> activities;
 
   public CacheDatastore(Datastore datastore) {
@@ -36,6 +38,15 @@ public class CacheDatastore implements Datastore {
                   @Override
                   public Settings load(UUID id) {
                     return datastore.getSettings(id);
+                  }
+                });
+    this.skins =
+        CacheBuilder.newBuilder()
+            .build(
+                new CacheLoader<UUID, Skin>() {
+                  @Override
+                  public Skin load(UUID id) {
+                    return datastore.getSkin(id);
                   }
                 });
     this.activities =
@@ -60,6 +71,16 @@ public class CacheDatastore implements Datastore {
   }
 
   @Override
+  public void setSkin(UUID uuid, Skin skin) {
+    skins.put(uuid, skin);
+  }
+
+  @Override
+  public Skin getSkin(UUID id) {
+    return skins.getUnchecked(id);
+  }
+
+  @Override
   public MapActivity getMapActivity(String poolName) {
     return activities.getUnchecked(poolName);
   }
@@ -70,6 +91,7 @@ public class CacheDatastore implements Datastore {
 
     usernames.invalidateAll();
     settings.invalidateAll();
+    skins.invalidateAll();
     activities.invalidateAll();
   }
 }

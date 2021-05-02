@@ -78,9 +78,9 @@ import tc.oc.pgm.modules.ModifyBowProjectileMatchModule;
 import tc.oc.pgm.modules.ModifyBowProjectileModule;
 import tc.oc.pgm.modules.MultiTradeMatchModule;
 import tc.oc.pgm.modules.SoundsMatchModule;
-import tc.oc.pgm.modules.TimeLockModule;
 import tc.oc.pgm.modules.ToolRepairMatchModule;
 import tc.oc.pgm.modules.ToolRepairModule;
+import tc.oc.pgm.modules.WorldTimeModule;
 import tc.oc.pgm.observers.ObserverToolsMatchModule;
 import tc.oc.pgm.picker.PickerMatchModule;
 import tc.oc.pgm.portals.PortalMatchModule;
@@ -113,6 +113,7 @@ import tc.oc.pgm.timelimit.TimeLimitMatchModule;
 import tc.oc.pgm.timelimit.TimeLimitModule;
 import tc.oc.pgm.tnt.TNTMatchModule;
 import tc.oc.pgm.tnt.TNTModule;
+import tc.oc.pgm.tntrender.TNTRenderMatchModule;
 import tc.oc.pgm.tracker.TrackerMatchModule;
 import tc.oc.pgm.wool.WoolMatchModule;
 import tc.oc.pgm.wool.WoolModule;
@@ -158,12 +159,13 @@ public interface Modules {
     register(FireworkMatchModule.class, FireworkMatchModule::new);
     register(StatsMatchModule.class, StatsMatchModule::new);
     register(MapmakerMatchModule.class, MapmakerMatchModule::new);
+    register(TNTRenderMatchModule.class, TNTRenderMatchModule::new);
 
     // FIXME: Disabled due to lag - look into future optimization
     // register(ProjectileTrailMatchModule.class, ProjectileTrailMatchModule::new);
 
     // Modules that help older player versions
-    register(LegacyFlagBeamMatchModule.class, LegacyFlagBeamMatchModule::new);
+    register(LegacyFlagBeamMatchModule.class, new LegacyFlagBeamMatchModule.Factory());
 
     // Community MatchModules
     register(FreezeMatchModule.class, FreezeMatchModule::new);
@@ -248,6 +250,6 @@ public interface Modules {
     register(SpawnerModule.class, SpawnerMatchModule.class, new SpawnerModule.Factory());
 
     // MapModules that are also MatchModules
-    register(TimeLockModule.class, TimeLockModule.class, new TimeLockModule.Factory());
+    register(WorldTimeModule.class, WorldTimeModule.class, new WorldTimeModule.Factory());
   }
 }

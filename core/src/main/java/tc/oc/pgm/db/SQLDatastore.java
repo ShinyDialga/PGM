@@ -14,6 +14,7 @@ import tc.oc.pgm.api.setting.SettingKey;
 import tc.oc.pgm.api.setting.SettingValue;
 import tc.oc.pgm.api.setting.Settings;
 import tc.oc.pgm.util.concurrent.ThreadSafeConnection;
+import tc.oc.pgm.util.skin.Skin;
 import tc.oc.pgm.util.text.TextParser;
 
 public class SQLDatastore extends ThreadSafeConnection implements Datastore {
@@ -196,6 +197,16 @@ public class SQLDatastore extends ThreadSafeConnection implements Datastore {
   @Override
   public Settings getSettings(UUID id) {
     return new SQLSettings(id, 0);
+  }
+
+  // Skins are only stored in the cache
+  /** @see CacheDatastore */
+  @Override
+  public void setSkin(UUID uuid, Skin skin) {}
+
+  @Override
+  public Skin getSkin(UUID uuid) {
+    return Skin.EMPTY;
   }
 
   @Override

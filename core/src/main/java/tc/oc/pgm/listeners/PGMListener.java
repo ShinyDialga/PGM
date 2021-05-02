@@ -6,6 +6,7 @@ import static net.kyori.adventure.text.Component.text;
 import static net.kyori.adventure.text.Component.translatable;
 
 import java.util.Collection;
+import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -14,7 +15,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Material;
-import org.bukkit.Server;
 import org.bukkit.entity.EnderPearl;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
@@ -36,6 +36,7 @@ import org.bukkit.event.vehicle.VehicleUpdateEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.Vector;
+import tc.oc.pgm.api.PGM;
 import tc.oc.pgm.api.Permissions;
 import tc.oc.pgm.api.event.BlockTransformEvent;
 import tc.oc.pgm.api.match.Match;
@@ -48,16 +49,27 @@ import tc.oc.pgm.api.player.VanishManager;
 import tc.oc.pgm.api.setting.SettingKey;
 import tc.oc.pgm.api.setting.SettingValue;
 import tc.oc.pgm.events.MapPoolAdjustEvent;
+import tc.oc.pgm.events.PlayerJoinMatchEvent;
 import tc.oc.pgm.events.PlayerParticipationStopEvent;
 import tc.oc.pgm.gamerules.GameRulesMatchModule;
-import tc.oc.pgm.modules.TimeLockModule;
+import tc.oc.pgm.modules.WorldTimeModule;
 import tc.oc.pgm.util.UsernameFormatUtils;
 import tc.oc.pgm.util.named.NameStyle;
+import tc.oc.pgm.util.nms.NMSHacks;
 import tc.oc.pgm.util.text.TemporalComponent;
 import tc.oc.pgm.util.text.TextTranslations;
 
 public class PGMListener implements Listener {
   private static final String DO_DAYLIGHT_CYCLE = "doDaylightCycle";
+  /*
+  1000  /time set day
+  6000  noon, sun is at its peak
+  12610 dusk
+  13000 /time set night
+  14000
+  18000 midnight, moon is at its peak
+  */
+  private static final long[] WORLD_TIMES = {1000, 6000, 12610, 13000, 14000, 18000};
 
   private final Plugin parent;
   private final MatchManager mm;
@@ -81,10 +93,7 @@ public class PGMListener implements Listener {
     // Create the match when the first player joins
     if (lock.writeLock().tryLock()) {
       // If the server is suspended, need to release so match can be created
-      final Server server = parent.getServer();
-      if (server.isSuspended()) {
-        server.setSuspended(false);
-      }
+      NMSHacks.resumeServer();
 
       try {
         mm.createMatch(null).get();
@@ -125,7 +134,7 @@ public class PGMListener implements Listener {
 
   @EventHandler(priority = EventPriority.LOW)
   public void addPlayerOnJoin(final PlayerJoinEvent event) {
-    Match match = this.mm.getMatch(event.getWorld());
+    Match match = this.mm.getMatch(event.getPlayer().getWorld());
     if (match == null) {
       event
           .getPlayer()
@@ -146,7 +155,7 @@ public class PGMListener implements Listener {
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void broadcastJoinMessage(final PlayerJoinEvent event) {
     // Handle join message and send it to all players except the one joining
-    Match match = this.mm.getMatch(event.getWorld());
+    Match match = this.mm.getMatch(event.getPlayer().getWorld());
     if (match == null) return;
 
     if (event.getJoinMessage() != null) {
@@ -219,7 +228,7 @@ public class PGMListener implements Listener {
   // sometimes arrows stuck in players persist through deaths
   @EventHandler
   public void fixStuckArrows(final PlayerRespawnEvent event) {
-    event.getPlayer().setArrowsStuck(0);
+    NMSHacks.clearArrowsInPlayer(event.getPlayer());
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -261,10 +270,8 @@ public class PGMListener implements Listener {
 
   @EventHandler
   public void unlockTime(final MatchStartEvent event) {
-    boolean unlockTime = false;
-    if (!event.getMatch().getModule(TimeLockModule.class).isTimeLocked()) {
-      unlockTime = true;
-    }
+    // if there is a timelock module and it is off, unlock time
+    boolean unlockTime = !event.getMatch().getModule(WorldTimeModule.class).isTimeLocked();
 
     GameRulesMatchModule gameRulesModule = event.getMatch().getModule(GameRulesMatchModule.class);
     if (gameRulesModule != null && gameRulesModule.getGameRules().containsKey(DO_DAYLIGHT_CYCLE)) {
@@ -280,6 +287,23 @@ public class PGMListener implements Listener {
   }
 
   @EventHandler
+  public void setTime(final MatchLoadEvent event) {
+    Long time = event.getMatch().getModule(WorldTimeModule.class).getTime();
+    if (time != null) {
+      event.getMatch().getWorld().setTime(time);
+    }
+  }
+
+  @EventHandler
+  public void randomTime(final MatchLoadEvent event) {
+    if (event.getMatch().getModule(WorldTimeModule.class).isTimeRandom()) {
+      Random rand = event.getMatch().getRandom();
+      long time = WORLD_TIMES[rand.nextInt(WORLD_TIMES.length)];
+      event.getMatch().getWorld().setTime(time);
+    }
+  }
+
+  @EventHandler
   public void freezeWorld(final BlockTransformEvent event) {
     Match match = this.mm.getMatch(event.getWorld());
     if (match == null || match.isFinished()) event.setCancelled(true);
@@ -287,7 +311,7 @@ public class PGMListener implements Listener {
 
   @EventHandler
   public void freezeVehicle(final VehicleUpdateEvent event) {
-    Match match = this.mm.getMatch(event.getWorld());
+    Match match = this.mm.getMatch(event.getVehicle().getWorld());
     if (match == null || match.isFinished()) {
       event.getVehicle().setVelocity(new Vector());
     }
@@ -310,12 +334,12 @@ public class PGMListener implements Listener {
 
     for (ItemStack item : quitter.getInventory().getContents()) {
       if (item == null || item.getType() == Material.AIR) continue;
-      quitter.getWorld().dropItemNaturally(quitter.getBukkit().getLocation(), item);
+      quitter.getBukkit().getWorld().dropItemNaturally(quitter.getBukkit().getLocation(), item);
     }
 
     for (ItemStack armor : quitter.getInventory().getArmorContents()) {
       if (armor == null || armor.getType() == Material.AIR) continue;
-      quitter.getWorld().dropItemNaturally(quitter.getBukkit().getLocation(), armor);
+      quitter.getBukkit().getWorld().dropItemNaturally(quitter.getBukkit().getLocation(), armor);
     }
   }
 
@@ -375,5 +399,11 @@ public class PGMListener implements Listener {
 
       event.getMatch().sendMessage(broadcast);
     }
+  }
+
+  @EventHandler // We only need to store skins for the post match stats
+  public void storeSkinOnMatchJoin(PlayerJoinMatchEvent event) {
+    final MatchPlayer player = event.getPlayer();
+    PGM.get().getDatastore().setSkin(player.getId(), NMSHacks.getPlayerSkin(player.getBukkit()));
   }
 }

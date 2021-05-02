@@ -20,11 +20,9 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
-import org.bukkit.event.entity.EntityDespawnInVoidEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.MaterialData;
-import org.bukkit.util.RayBlockIntersection;
 import org.bukkit.util.Vector;
 import tc.oc.pgm.api.event.BlockTransformEvent;
 import tc.oc.pgm.api.match.Match;
@@ -33,8 +31,10 @@ import tc.oc.pgm.api.match.MatchScope;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.events.ListenerScope;
 import tc.oc.pgm.events.ParticipantBlockTransformEvent;
+import tc.oc.pgm.util.block.RayBlockIntersection;
 import tc.oc.pgm.util.event.PlayerPunchBlockEvent;
 import tc.oc.pgm.util.event.PlayerTrampleBlockEvent;
+import tc.oc.pgm.util.event.entity.EntityDespawnInVoidEvent;
 import tc.oc.pgm.util.material.Materials;
 
 @ListenerScope(MatchScope.RUNNING)
@@ -229,7 +229,7 @@ public class BlockDropsMatchModule implements MatchModule, Listener {
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onBlockPunch(PlayerPunchBlockEvent event) {
     final MatchPlayer player = match.getPlayer(event.getPlayer());
-    if (player == null) return;
+    if (player == null || !player.canInteract()) return;
 
     RayBlockIntersection hit = event.getRay();
 
@@ -249,7 +249,7 @@ public class BlockDropsMatchModule implements MatchModule, Listener {
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onBlockTrample(PlayerTrampleBlockEvent event) {
     final MatchPlayer player = match.getPlayer(event.getPlayer());
-    if (player == null) return;
+    if (player == null || !player.canInteract()) return;
 
     BlockDrops drops =
         getRuleSet().getDrops(event, event.getBlock().getState(), player.getParticipantState());

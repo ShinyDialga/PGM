@@ -67,7 +67,9 @@ import tc.oc.pgm.rotation.MapPoolManager;
 import tc.oc.pgm.rotation.RandomMapOrder;
 import tc.oc.pgm.tablist.MatchTabManager;
 import tc.oc.pgm.util.FileUtils;
+import tc.oc.pgm.util.bukkit.BukkitUtils;
 import tc.oc.pgm.util.chunk.NullChunkGenerator;
+import tc.oc.pgm.util.compatability.SportPaperListener;
 import tc.oc.pgm.util.concurrent.BukkitExecutorService;
 import tc.oc.pgm.util.listener.ItemTransferListener;
 import tc.oc.pgm.util.listener.PlayerBlockListener;
@@ -170,11 +172,12 @@ public class PGMPlugin extends JavaPlugin implements PGM, Listener {
       }
     }
 
-    if (config.getMapPoolFile() == null) {
-      mapOrder = new RandomMapOrder(Lists.newArrayList(mapLibrary.getMaps()));
-    } else {
-      mapOrder = new MapPoolManager(logger, new File(config.getMapPoolFile()), datastore);
+    if (config.getMapPoolFile() != null) {
+      MapPoolManager manager =
+          new MapPoolManager(logger, new File(config.getMapPoolFile()), datastore);
+      if (manager.getActiveMapPool() != null) mapOrder = manager;
     }
+    if (mapOrder == null) mapOrder = new RandomMapOrder(Lists.newArrayList(mapLibrary.getMaps()));
 
     // FIXME: To avoid startup lag, we "prefetch" usernames after map pools are loaded.
     // Change MapPoolManager so it doesn't depend on all maps being loaded.
@@ -336,6 +339,9 @@ public class PGMPlugin extends JavaPlugin implements PGM, Listener {
   }
 
   private void registerListeners() {
+    if (BukkitUtils.isSportPaper()) {
+      registerEvents(new SportPaperListener());
+    }
     registerEvents(new PlayerBlockListener());
     registerEvents(new PlayerMoveListener());
     registerEvents(new ItemTransferListener());
@@ -377,31 +383,39 @@ public class PGMPlugin extends JavaPlugin implements PGM, Listener {
         return record.getMessage();
       }
 
-      final TextException textErr = tryException(TextException.class, thrown);
-      if (textErr != null) {
-        return format(null, textErr.getLocalizedMessage(), textErr.getCause());
-      }
-
       final InvalidXMLException xmlErr = tryException(InvalidXMLException.class, thrown);
-      if (xmlErr != null) {
-        return format(xmlErr.getFullLocation(), xmlErr.getMessage(), xmlErr.getCause());
-      }
-
       final MapException mapErr = tryException(MapException.class, thrown);
-      if (mapErr != null) {
-        return format(mapErr.getLocation(), mapErr.getMessage(), mapErr.getCause());
-      }
-
       final ModuleLoadException moduleErr = tryException(ModuleLoadException.class, thrown);
-      if (moduleErr != null) {
+
+      String location = null;
+      if (xmlErr != null) {
+        location = xmlErr.getFullLocation();
+      } else if (mapErr != null) {
+        location = mapErr.getLocation();
+      } else if (moduleErr != null) {
         final Class<? extends Module> module = moduleErr.getModule();
-        return format(
-            (module == null ? ModuleLoadException.class : module).getSimpleName(),
-            moduleErr.getMessage(),
-            moduleErr.getCause());
+        location = (module == null ? ModuleLoadException.class : module).getSimpleName();
       }
 
-      return null;
+      final TextException textErr = tryException(TextException.class, thrown);
+
+      Throwable cause = thrown.getCause();
+      String message = thrown.getMessage();
+      if (textErr != null) {
+        cause = null;
+        message = textErr.getLocalizedMessage();
+      } else if (xmlErr != null) {
+        cause = xmlErr.getCause();
+        message = xmlErr.getMessage();
+      } else if (mapErr != null) {
+        cause = mapErr.getCause();
+        message = mapErr.getMessage();
+      } else if (moduleErr != null) {
+        cause = moduleErr.getCause();
+        message = moduleErr.getMessage();
+      }
+
+      return format(location, message, cause);
     }
 
     private String format(

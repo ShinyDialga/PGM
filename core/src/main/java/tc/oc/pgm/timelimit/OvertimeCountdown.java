@@ -1,6 +1,5 @@
 package tc.oc.pgm.timelimit;
 
-import static net.kyori.adventure.text.Component.text;
 import static net.kyori.adventure.text.Component.translatable;
 
 import java.time.Duration;
@@ -17,7 +16,7 @@ import tc.oc.pgm.util.text.TemporalComponent;
 
 public class OvertimeCountdown extends TimeLimitCountdown {
 
-  private @Nullable Instant maxRefresh;
+  private @Nullable Instant overtimeStart, overtimeEnd;
   private @Nullable Competitor winner;
 
   public OvertimeCountdown(Match match, TimeLimit timeLimit) {
@@ -47,7 +46,7 @@ public class OvertimeCountdown extends TimeLimitCountdown {
     return translatable(
             "misc.overtime",
             NamedTextColor.YELLOW,
-            text(colonTime(), urgencyColor()).decoration(TextDecoration.BOLD, false))
+            colonTime().decoration(TextDecoration.BOLD, false))
         .decoration(TextDecoration.BOLD, true);
   }
 
@@ -76,14 +75,15 @@ public class OvertimeCountdown extends TimeLimitCountdown {
 
     match.sendMessage(translatable("broadcast.overtime", NamedTextColor.YELLOW));
     if (timeLimit.getMaxOvertime() != null) {
+      overtimeStart = Instant.now();
+      overtimeEnd = overtimeStart.plus(timeLimit.getMaxOvertime());
+
       match.sendMessage(
           translatable(
               "broadcast.overtime.limit",
               NamedTextColor.YELLOW,
               TemporalComponent.briefNaturalApproximate(timeLimit.getMaxOvertime())
                   .color(NamedTextColor.AQUA)));
-
-      maxRefresh = Instant.now().plus(timeLimit.getMaxOvertime()).minus(timeLimit.getOvertime());
     }
   }
 
@@ -92,10 +92,10 @@ public class OvertimeCountdown extends TimeLimitCountdown {
     Competitor newWinner = timeLimit.currentWinner(match);
 
     if ((newWinner == null || this.winner != newWinner)
-        && (maxRefresh == null || !Instant.now().isAfter(maxRefresh))) {
+        && (overtimeEnd == null || !Instant.now().isAfter(overtimeEnd))) {
       this.winner = newWinner;
       start(); // Force the countdown to be re-scheduled
-      remaining = total;
+      remaining = total = this.total;
     }
     super.onTick(remaining, total);
   }
@@ -105,6 +105,20 @@ public class OvertimeCountdown extends TimeLimitCountdown {
   }
 
   public void start() {
-    this.getMatch().getCountdown().start(this, this.timeLimit.getOvertime());
+    Duration overtime = this.timeLimit.getOvertime();
+    Duration endOvertime = this.timeLimit.getEndOvertime();
+    Duration maxOvertime = this.timeLimit.getMaxOvertime();
+
+    if (overtime != null && endOvertime != null && maxOvertime != null && overtimeStart != null) {
+      long otMillis = overtime.toMillis();
+      long endOtMillis = endOvertime.toMillis();
+      long maxOtMillis = maxOvertime.toMillis();
+      long elapsedMillis = Duration.between(overtimeStart, Instant.now()).toMillis();
+
+      overtime =
+          Duration.ofMillis((otMillis + (endOtMillis - otMillis) * elapsedMillis / maxOtMillis));
+    }
+
+    this.getMatch().getCountdown().start(this, this.total = overtime);
   }
 }

@@ -4,13 +4,16 @@ import static net.kyori.adventure.bossbar.BossBar.bossBar;
 import static net.kyori.adventure.text.Component.empty;
 import static net.kyori.adventure.text.Component.space;
 import static net.kyori.adventure.text.Component.text;
-import static net.kyori.adventure.text.Component.translatable;
 import static net.kyori.adventure.title.Title.title;
+import static tc.oc.pgm.util.TimeUtils.fromTicks;
+import static tc.oc.pgm.util.text.TemporalComponent.clock;
+import static tc.oc.pgm.util.text.TemporalComponent.seconds;
 
 import java.time.Duration;
 import javax.annotation.Nullable;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.title.Title;
@@ -18,7 +21,6 @@ import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.events.CountdownCancelEvent;
 import tc.oc.pgm.events.CountdownEndEvent;
 import tc.oc.pgm.events.CountdownStartEvent;
-import tc.oc.pgm.util.TimeUtils;
 
 public abstract class MatchCountdown extends Countdown {
   protected final Match match;
@@ -96,7 +98,7 @@ public abstract class MatchCountdown extends Countdown {
               title(
                   text(remaining.getSeconds(), NamedTextColor.YELLOW),
                   empty(),
-                  Title.Times.of(Duration.ZERO, Duration.ofMillis(5), Duration.ofMillis(15))));
+                  Title.Times.of(Duration.ZERO, fromTicks(5), fromTicks(15))));
     }
 
     super.onTick(remaining, total);
@@ -151,16 +153,11 @@ public abstract class MatchCountdown extends Countdown {
   }
 
   protected Component secondsRemaining(TextColor color) {
-    long seconds = remaining.getSeconds();
-    if (seconds == 1) {
-      return translatable("misc.second", text("1", color));
-    } else {
-      return translatable("misc.seconds", text(seconds, color));
-    }
+    return seconds(remaining.getSeconds(), color).build();
   }
 
-  protected String colonTime() {
-    return TimeUtils.formatDuration(remaining);
+  protected TextComponent.Builder colonTime() {
+    return clock(remaining).color(urgencyColor());
   }
 
   protected float bossBarProgress(Duration remaining, Duration total) {

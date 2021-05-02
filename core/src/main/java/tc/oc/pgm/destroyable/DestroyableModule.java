@@ -21,6 +21,7 @@ import tc.oc.pgm.blockdrops.BlockDropsModule;
 import tc.oc.pgm.goals.GoalMatchModule;
 import tc.oc.pgm.goals.ProximityMetric;
 import tc.oc.pgm.modes.Mode;
+import tc.oc.pgm.modes.ObjectiveModesModule;
 import tc.oc.pgm.regions.BlockBoundedValidation;
 import tc.oc.pgm.regions.RegionModule;
 import tc.oc.pgm.regions.RegionParser;
@@ -69,7 +70,7 @@ public class DestroyableModule implements MapModule {
 
     @Override
     public Collection<Class<? extends MapModule>> getWeakDependencies() {
-      return ImmutableList.of(BlockDropsModule.class);
+      return ImmutableList.of(BlockDropsModule.class, ObjectiveModesModule.class);
     }
 
     @Override

@@ -15,6 +15,8 @@ import tc.oc.pgm.api.setting.Settings;
 import tc.oc.pgm.filters.query.Query;
 import tc.oc.pgm.kits.Kit;
 import tc.oc.pgm.util.Audience;
+import tc.oc.pgm.util.attribute.Attribute;
+import tc.oc.pgm.util.attribute.AttributeInstance;
 import tc.oc.pgm.util.bukkit.ViaUtils;
 import tc.oc.pgm.util.named.Named;
 
@@ -248,6 +250,8 @@ public interface MatchPlayer extends Audience, Named, Tickable, InventoryHolder 
   String getDeathMessage();
 
   void setDeathMessage(String deathMessage);
+
+  AttributeInstance getAttribute(Attribute attribute);
 
   /**
    * Get the {@link GameMode} of the {@link MatchPlayer}.

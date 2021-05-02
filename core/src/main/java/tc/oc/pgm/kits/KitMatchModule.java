@@ -5,7 +5,6 @@ import static net.kyori.adventure.text.Component.text;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 import org.bukkit.Material;
-import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -56,15 +55,6 @@ public class KitMatchModule implements MatchModule, Listener {
     } else {
       return this.lockedArmorSlots.remove(player, armorType);
     }
-  }
-
-  /** Clear any {@link AttributeModifier}s applied to the player by {@link AttributeKit}s */
-  public void clearAttributeModifiers(MatchPlayer player) {
-    // FIXME: Bukkit API is not supported
-    /*for (AttributeModifier modifier :
-        match.getMap().getKits().getAttributeModifiers()) {
-       player.getBukkit().removeAttributeModifier(modifier);
-    }*/
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -131,7 +121,6 @@ public class KitMatchModule implements MatchModule, Listener {
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerReset(final PlayerResetEvent event) {
     this.lockedArmorSlots.removeAll(event.getPlayer());
-    clearAttributeModifiers(event.getPlayer());
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -162,6 +151,7 @@ public class KitMatchModule implements MatchModule, Listener {
       Grenade grenade = Grenade.get(event.getEntity());
       if (grenade != null) {
         event
+            .getEntity()
             .getWorld()
             .createExplosion(
                 event.getEntity(),

@@ -21,9 +21,6 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.bukkit.GameMode;
 import org.bukkit.World;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.attribute.AttributeInstance;
-import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -50,6 +47,11 @@ import tc.oc.pgm.kits.WalkSpeedKit;
 import tc.oc.pgm.util.Audience;
 import tc.oc.pgm.util.ClassLogger;
 import tc.oc.pgm.util.TimeUtils;
+import tc.oc.pgm.util.attribute.Attribute;
+import tc.oc.pgm.util.attribute.AttributeInstance;
+import tc.oc.pgm.util.attribute.AttributeMap;
+import tc.oc.pgm.util.attribute.AttributeMapImpl;
+import tc.oc.pgm.util.attribute.AttributeModifier;
 import tc.oc.pgm.util.bukkit.ViaUtils;
 import tc.oc.pgm.util.named.NameStyle;
 import tc.oc.pgm.util.nms.NMSHacks;
@@ -58,7 +60,6 @@ public class MatchPlayerImpl implements MatchPlayer, Comparable<MatchPlayer> {
 
   // TODO: Probably should be moved to a better location
   private static final int FROZEN_VEHICLE_ENTITY_ID = NMSHacks.allocateEntityId();
-  private static final Attribute[] ATTRIBUTES = Attribute.values();
 
   private static final String DEATH_KEY = "isDead";
   private static final MetadataValue DEATH_VALUE = new FixedMetadataValue(PGM.get(), true);
@@ -78,6 +79,7 @@ public class MatchPlayerImpl implements MatchPlayer, Comparable<MatchPlayer> {
   private final AtomicBoolean vanished;
   private String deathMessage;
   private String killMessage;
+  private final AttributeMap attributeMap;
 
   public MatchPlayerImpl(Match match, Player player) {
     this.logger =
@@ -95,6 +97,7 @@ public class MatchPlayerImpl implements MatchPlayer, Comparable<MatchPlayer> {
     this.vanished = new AtomicBoolean(false);
     this.protocolReady = new AtomicBoolean(ViaUtils.isReady(player));
     this.protocolVersion = new AtomicInteger(ViaUtils.getProtocolVersion(player));
+    this.attributeMap = new AttributeMapImpl(player);
   }
 
   @Override
@@ -233,7 +236,9 @@ public class MatchPlayerImpl implements MatchPlayer, Comparable<MatchPlayer> {
     boolean interact = canInteract();
 
     if (!interact) player.leaveVehicle();
-    player.spigot().setAffectsSpawning(interact);
+
+    // This is only possible in sportpaper
+    NMSHacks.setAffectsSpawning(player, interact);
     player.spigot().setCollidesWithEntities(interact);
   }
 
@@ -248,7 +253,7 @@ public class MatchPlayerImpl implements MatchPlayer, Comparable<MatchPlayer> {
     final Player bukkit = getBukkit();
     if (bukkit == null) return;
 
-    bukkit.showInvisibles(isObserving());
+    NMSHacks.showInvisibles(bukkit, isObserving());
 
     for (MatchPlayer other : getMatch().getPlayers()) {
       if (canSee(other)) {
@@ -272,7 +277,6 @@ public class MatchPlayerImpl implements MatchPlayer, Comparable<MatchPlayer> {
 
     bukkit.closeInventory();
     resetInventory();
-    bukkit.setArrowsStuck(0);
     bukkit.setExhaustion(0);
     bukkit.setFallDistance(0);
     bukkit.setFireTicks(0);
@@ -286,8 +290,9 @@ public class MatchPlayerImpl implements MatchPlayer, Comparable<MatchPlayer> {
     bukkit.setSneaking(false);
     bukkit.setSprinting(false);
     bukkit.setFlySpeed(0.1f);
-    bukkit.setKnockbackReduction(0);
     bukkit.setWalkSpeed(WalkSpeedKit.BUKKIT_DEFAULT);
+    NMSHacks.clearArrowsInPlayer(bukkit);
+    NMSHacks.setKnockbackReduction(bukkit, 0);
 
     for (PotionEffect effect : bukkit.getActivePotionEffects()) {
       if (effect.getType() != null) {
@@ -295,8 +300,8 @@ public class MatchPlayerImpl implements MatchPlayer, Comparable<MatchPlayer> {
       }
     }
 
-    for (Attribute attribute : ATTRIBUTES) {
-      AttributeInstance attributes = bukkit.getAttribute(attribute);
+    for (Attribute attribute : Attribute.values()) {
+      AttributeInstance attributes = getAttribute(attribute);
       if (attributes == null) continue;
 
       for (AttributeModifier modifier : attributes.getModifiers()) {
@@ -336,37 +341,6 @@ public class MatchPlayerImpl implements MatchPlayer, Comparable<MatchPlayer> {
 
       if (yes) {
         NMSHacks.spawnFreezeEntity(bukkit, FROZEN_VEHICLE_ENTITY_ID, isLegacy());
-
-        //        // For 1.7 players, spawn a wither skull. For 1.8+, spawn an armor stand.
-        //        if (getProtocolVersion() >= ViaUtils.VERSION_1_8) {
-        //          NMSHacks.EntityMetadata metadata = NMSHacks.createEntityMetadata();
-        //          NMSHacks.setEntityMetadata(metadata, false, false, false, false, true, (short)
-        // 0);
-        //          NMSHacks.setArmorStandFlags(metadata, false, false, false, false);
-        //
-        //          NMSHacks.spawnLivingEntity(
-        //              bukkit,
-        //              EntityType.ARMOR_STAND,
-        //              FROZEN_VEHICLE_ENTITY_ID,
-        //              bukkit.getLocation().subtract(0, 1.1, 0),
-        //              metadata);
-        //
-        //        } else {
-        //          // WitherSkulls die in the void, so make sure the player is out of it
-        //          Location newLocation =
-        //              bukkit
-        //                  .getLocation()
-        //                  .set(
-        //                      bukkit.getLocation().getX(),
-        //                      Math.max(-50, bukkit.getLocation().getY()),
-        //                      bukkit.getLocation().getZ());
-        //          bukkit.teleport(newLocation);
-        //          NMSHacks.spawnEntity(
-        //              bukkit,
-        //              66, // WitherSkull
-        //              FROZEN_VEHICLE_ENTITY_ID,
-        //              newLocation.add(0, 0.286, 0));
-        //        }
         NMSHacks.entityAttach(bukkit, bukkit.getEntityId(), FROZEN_VEHICLE_ENTITY_ID, false);
       } else {
         NMSHacks.destroyEntities(bukkit, FROZEN_VEHICLE_ENTITY_ID);
@@ -463,6 +437,11 @@ public class MatchPlayerImpl implements MatchPlayer, Comparable<MatchPlayer> {
     return PGM.get()
         .getNameDecorationRegistry()
         .getDecoratedName(getBukkit(), getParty().getColor());
+  }
+
+  @Override
+  public AttributeInstance getAttribute(Attribute attribute) {
+    return attributeMap.getAttribute(attribute);
   }
 
   @Override
