@@ -257,6 +257,13 @@ public interface Config {
   boolean showVerboseStats();
 
   /**
+   * Gets whether to show quit messages
+   *
+   * @return If quit messages are enabled
+   */
+  boolean showQuitMessages();
+
+  /**
    * Gets at which score players should be no longer allowed to keep playing TDM
    *
    * @return The minimum score they must hold

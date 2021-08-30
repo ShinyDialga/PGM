@@ -88,6 +88,7 @@ public final class PGMConfig implements Config {
   private final boolean showFireworks;
   private final boolean participantsSeeObservers;
   private final boolean verboseStats;
+  private final boolean quitMessages;
 
   // sidebar.*
   private final Component header;
@@ -166,6 +167,8 @@ public final class PGMConfig implements Config {
     this.verboseStats = parseBoolean(config.getString("ui.verbose-stats", "false"));
     this.griefScore =
         parseInteger(config.getString("gameplay.grief-score", "-10"), Range.atMost(0));
+
+    this.quitMessages = parseBoolean(config.getString("ui.quit-messages", "false"));
 
     this.minPlayers = parseInteger(config.getString("join.min-players", "1"));
     this.limitJoin = parseBoolean(config.getString("join.limit", "true"));
@@ -567,6 +570,10 @@ public final class PGMConfig implements Config {
 
   public boolean showVerboseStats() {
     return verboseStats;
+  }
+
+  public boolean showQuitMessages() {
+    return quitMessages;
   }
 
   @Override

@@ -36,6 +36,7 @@ import org.bukkit.event.vehicle.VehicleUpdateEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.Vector;
+import tc.oc.pgm.api.PGM;
 import tc.oc.pgm.api.Permissions;
 import tc.oc.pgm.api.event.BlockTransformEvent;
 import tc.oc.pgm.api.match.Match;
@@ -167,7 +168,9 @@ public class PGMListener implements Listener {
     if (event.getQuitMessage() != null) {
       // Announce actual staff quit
       announceJoinOrLeave(player, false, vm.isVanished(player.getId()));
-      event.setQuitMessage(null);
+      if (!PGM.get().getConfiguration().showQuitMessages()) {
+        event.setQuitMessage(null);
+      }
     }
 
     player.getMatch().removePlayer(event.getPlayer());
